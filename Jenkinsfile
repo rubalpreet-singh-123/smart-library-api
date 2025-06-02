@@ -15,12 +15,15 @@ pipeline {
     }
 
     stage('Code Quality') {
-      steps {
-        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-          bat 'sonar-scanner -Dsonar.login=%SONAR_TOKEN%'
-        }
+  steps {
+    withSonarQubeEnv('SonarQube') {
+      withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+        bat "\"${tool 'SonarScanner'}\\bin\\sonar-scanner.bat\" -Dsonar.login=%SONAR_TOKEN%"
       }
     }
+  }
+}
+
 
     stage('Security') {
       steps {

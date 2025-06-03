@@ -1,51 +1,55 @@
 pipeline {
-  agent any
+    agent any
 
-  stages {
-    stage('Build') {
-      steps {
-        bat 'npm install'
-      }
+    environment {
+        SONAR_SCANNER_HOME = 'C:\\sonar-scanner-7.1.0.4889-windows-x64\\bin' // Update this if your path is different
     }
 
-    stage('Test') {
-      steps {
-        bat 'npm test -- --passWithNoTests'
-      }
-    }
-
-    stage('Code Quality') {
-      steps {
-        withSonarQubeEnv('SonarQube') {
-          withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-            bat 'sonar-scanner -Dsonar.login=%SONAR_TOKEN%'
-          }
+    stages {
+        stage('Build') {
+            steps {
+                bat 'npm install'
+            }
         }
-      }
-    }
 
-    stage('Security') {
-      steps {
-        bat 'npm audit --json > audit.json'
-      }
-    }
+        stage('Test') {
+            steps {
+                bat 'npm test -- --passWithNoTests'
+            }
+        }
 
-    stage('Deploy') {
-      steps {
-        bat 'docker-compose up -d --build'
-      }
-    }
+        stage('Code Quality') {
+            steps {
+                withSonarQubeEnv('SonarCloud') {
+                    withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+                        bat "\"${env.SONAR_SCANNER_HOME}\\sonar-scanner.bat\" -Dsonar.login=%SONAR_TOKEN%"
+                    }
+                }
+            }
+        }
 
-    stage('Release') {
-      steps {
-        bat 'echo Release step running'
-      }
-    }
+        stage('Security') {
+            steps {
+                bat 'npm audit --json > audit.json'
+            }
+        }
 
-    stage('Monitoring') {
-      steps {
-        bat 'echo Monitoring step running'
-      }
+        stage('Deploy') {
+            steps {
+                bat 'docker-compose up -d --build'
+            }
+        }
+
+        stage('Release') {
+            steps {
+                bat 'echo Release step running'
+            }
+        }
+
+        stage('Monitoring') {
+            steps {
+                bat 'echo Monitoring step running'
+            }
+        }
     }
-  }
 }

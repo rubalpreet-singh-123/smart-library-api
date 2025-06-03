@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         SONAR_SCANNER_HOME = 'C:\\sonar-scanner-7.1.0.4889-windows-x64\\bin'
+        IMAGE = 'rubalpret123/smart-library-api'
     }
 
     stages {
@@ -42,25 +43,32 @@ pipeline {
             }
         }
 
+        stage('Build Docker Image') {
+            steps {
+                // Build your Docker image with both 'latest' and build number tags
+                bat "docker build -t %IMAGE%:latest -t %IMAGE%:%BUILD_NUMBER% ."
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                // Push both tags to Docker Hub
+                bat "docker push %IMAGE%:latest"
+                bat "docker push %IMAGE%:%BUILD_NUMBER%"
+            }
+        }
+
         stage('Deploy') {
             steps {
+                // Deploy using docker-compose or your preferred method
                 bat 'docker-compose up -d --build'
             }
         }
 
         stage('Release') {
             steps {
-                script {
-                    // Set your image name and version/tag here
-                    def IMAGE = "rubalpret123/smart-library-api"
-                    def VERSION = "v${env.BUILD_NUMBER}"
-
-                    // Tag the Docker image and push
-                    bat "docker tag smart-library-api:latest %IMAGE%:%VERSION%"
-                    bat "docker push %IMAGE%:%VERSION%"
-                    bat "docker tag smart-library-api:latest %IMAGE%:latest"
-                    bat "docker push %IMAGE%:latest"
-                }
+                // Optionally, you can add more release logic or notifications here
+                bat 'echo Release complete'
             }
         }
 
@@ -68,6 +76,15 @@ pipeline {
             steps {
                 bat 'echo Monitoring step running'
             }
+        }
+    }
+
+    post {
+        failure {
+            bat 'echo Build failed!'
+        }
+        always {
+            bat 'docker logout'
         }
     }
 }

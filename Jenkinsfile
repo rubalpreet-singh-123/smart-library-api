@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SONAR_SCANNER_HOME = 'C:\\sonar-scanner-7.1.0.4889-windows-x64\\bin' // Update this if your path is different
+        SONAR_SCANNER_HOME = 'C:\\sonar-scanner-7.1.0.4889-windows-x64\\bin'
     }
 
     stages {
@@ -34,6 +34,14 @@ pipeline {
             }
         }
 
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'rubalpret123', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+                }
+            }
+        }
+
         stage('Deploy') {
             steps {
                 bat 'docker-compose up -d --build'
@@ -42,7 +50,17 @@ pipeline {
 
         stage('Release') {
             steps {
-                bat 'echo Release step running'
+                script {
+                    // Set your image name and version/tag here
+                    def IMAGE = "rubalpret123/smart-library-api"
+                    def VERSION = "v${env.BUILD_NUMBER}"
+
+                    // Tag the Docker image and push
+                    bat "docker tag smart-library-api:latest %IMAGE%:%VERSION%"
+                    bat "docker push %IMAGE%:%VERSION%"
+                    bat "docker tag smart-library-api:latest %IMAGE%:latest"
+                    bat "docker push %IMAGE%:latest"
+                }
             }
         }
 
